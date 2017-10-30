@@ -1,0 +1,154 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct _no {
+    int v,h,index,pEsq,pDir;
+    struct _no *esq,*dir;
+} No;
+
+typedef struct {
+    No *raiz;
+} arvore;
+
+int altura(No *n);
+int maior(int h1, int h2);
+void defAlt(No *n);
+No *RaizDir(No *n);
+No *RaizEsq(No *n);
+int verBalance(No *n);
+No *Balance(No *n);
+No *CriarNo(int val, int index);
+No *Add(No *n, int val, int index);
+void encontra(No *n, int val);
+
+int main() {
+    arvore *avl = (arvore*)malloc(sizeof(arvore));
+    avl->raiz= NULL;
+    int T, acao, n;
+    scanf("%d", &T);
+    while(T--) {
+        scanf("%d %d", &acao, &n);
+        if(acao==1) avl->raiz=Add(avl->raiz,n,1);
+        else encontra(avl->raiz,n);
+    }
+}
+
+int altura(No *n) {
+    return n? n->h : 0;
+}
+
+int maior(int h1, int h2) {
+    return h1>h2? h1 : h2;
+}
+
+void defAlt(No *n) {
+    if(n)n->h=maior(altura(n->esq), altura(n->dir)) + 1;
+}
+
+No *RaizDir(No *n) {
+    No *a=n->esq;
+    n->esq=a->dir;
+    a->dir=n;
+    defAlt(n);
+    defAlt(a);
+    a->index += n->pEsq;
+    a->pEsq+=n->pEsq;
+    n->pEsq+=a->pDir;
+    a->pDir=0;
+    return a;
+}
+
+No *RaizEsq(No *n) {
+    No *a=n->dir;
+    n->dir=a->esq;
+    a->esq=n;
+    defAlt(n);
+    defAlt(a);
+    a->index +=n->pDir;
+    a->pDir +=n->pDir;
+    n->pDir +=a->pEsq;
+    a->pEsq=0;
+    return a;
+}
+
+int verBalance(No *n) {
+    return n? altura(n->esq)-altura(n->dir): 0;
+}
+
+No *Balance(No *n) {
+    defAlt(n);
+    int bal=verBalance(n);
+    if(bal<-1) {
+        if(verBalance(n->dir)>1) n->dir=RaizDir(n->dir);
+        return RaizEsq(n);
+    } else if(bal>1) {
+        if(verBalance(n->esq)<-1) n->esq=RaizEsq(n->esq);
+        return RaizDir(n);
+    }
+    return n;
+}
+
+No *CriarNo(int val, int index) {
+    No *aux = (No*)malloc(sizeof(No));
+    aux->v = val;
+    aux->index = index;
+    aux->h = 1;
+    aux->pEsq = aux->pDir = 0;
+    aux->esq = aux->dir = NULL;
+    return aux;
+}
+
+No *Add(No *n, int val, int index) {
+    if(!n) return CriarNo(val, index);
+    else if(val<n->v) {
+        n->index += 1;
+        n->pDir+= 1;
+        if(n->esq){
+            n->esq=Add(n->esq, val, index);
+        }
+        else {
+            n->esq=Add(n->esq, val, n->index - 1);
+            n->pEsq = 0;
+        }
+    } else {
+        if(n->dir){
+            n->dir= Add(n->dir, val, index);
+        }
+        else {
+            n->dir = Add(n->dir, val, n->index + 1);
+            n->pDir = 0;
+        }
+    }
+    return Balance(n);
+}
+
+void encontra(No *n, int val) {
+    No *i = n;
+    while(i)
+        if(val == i->v) {
+            printf("%d\n", i->index);
+            return;
+        } else if(val < i->v) {
+            if(i->pEsq) {
+                if(i->esq) {
+                    i->esq->index += i->pEsq;
+                    i->esq->pEsq += i->pEsq;
+                    i->esq->pDir += i->pEsq;
+                }
+                i->pEsq = 0;
+            }
+
+            i = i->esq;
+        } else {
+            if(i->pDir) {
+                if(i->dir) {
+                    i->dir->index += i->pDir;
+                    i->dir->pEsq += i->pDir;
+                    i->dir->pDir += i->pDir;
+                }
+                i->pDir=0;
+            }
+            i=i->dir;
+        }
+    printf("Data tidak ada\n");
+}
